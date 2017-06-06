@@ -12,6 +12,16 @@ def setup(bot):
     bot.add_cog(Music(bot))
 
 
+def duration_to_str(duration):
+    # Extract minutes, hours and days
+    minutes, seconds = divmod(duration, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+
+    # Create a fancy string
+    return f"{f'{days} days, ' if days > 0 else ''}{f'{hours} hours, ' if hours > 0 else ''}{f'{minutes} minutes, ' if minutes > 0 else ''}{seconds} seconds"
+
+
 class MusicError(commands.UserInputError):
     pass
 
@@ -24,7 +34,7 @@ class Song(discord.PCMVolumeTransformer):
         super().__init__(discord.FFmpegPCMAudio(info['url']))
 
     def __str__(self):
-        return f"**{self.info['title']}** from **{self.info['creator']}** (duration: {self.info['duration']}s)"
+        return f"**{self.info['title']}** from **{self.info['creator'] or self.info['uploader']}** (duration: {duration_to_str(self.info['duration'])})"
 
 
 class GuildMusicState:
@@ -191,7 +201,7 @@ class Music:
         if not ctx.music_state.is_playing():
             await ctx.music_state.play_next_song()
         else:
-            await ctx.send(f'Queued {source} in position #{ctx.music_state.playlist.qsize()}')
+            await ctx.send(f'Queued {source} in position **#{ctx.music_state.playlist.qsize()}**')
 
         await ctx.message.remove_reaction('\N{HOURGLASS}', ctx.me)
         await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
