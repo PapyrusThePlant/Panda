@@ -157,7 +157,7 @@ class Music:
         destination = channel or ctx.author.voice.channel
 
         if ctx.music_state.voice_client:
-            ctx.music_state.voice_client.move_to(destination)
+            await ctx.music_state.voice_client.move_to(destination)
         else:
             ctx.music_state.voice_client = await destination.connect()
 
