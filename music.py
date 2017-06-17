@@ -34,7 +34,7 @@ class Song(discord.PCMVolumeTransformer):
         super().__init__(discord.FFmpegPCMAudio(info['url']))
 
     def __str__(self):
-        return f"**{self.info['title']}** from **{self.info['creator'] or self.info['uploader']}** (duration: {duration_to_str(self.info['duration'])})"
+        return f"**{self.info['title']}** from **{self.info.get('creator') or self.info['uploader']}** (duration: {duration_to_str(self.info['duration'])})"
 
 
 class GuildMusicState:
