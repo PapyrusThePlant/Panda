@@ -82,7 +82,7 @@ class GuildMusicState:
         else:
             next_song = self.playlist.get_nowait()
             next_song.volume = self.player_volume
-            self.voice_client.play(next_song, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next_song(error), self.loop).result())
+            self.voice_client.play(next_song, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next_song(e), self.loop).result())
             await next_song.channel.send(f'Now playing {next_song}')
 
 
