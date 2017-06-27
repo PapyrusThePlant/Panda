@@ -25,13 +25,15 @@ class MusicError(commands.UserInputError):
     pass
 
 
-class YtdlAudio(discord.FFmpegPCMAudio):
-    def __init__(self, info, **kwargs):
+class Song(discord.PCMVolumeTransformer):
+    def __init__(self, info, requester, channel):
         self.info = info
-        super().__init__(info['url'], **kwargs)
+        self.requester = requester
+        self.channel = channel
+        super().__init__(discord.FFmpegPCMAudio(info['url']))
 
     @classmethod
-    async def create(cls, url, loop=None, ytdl_options=None, **kwargs):
+    async def create(cls, url, requester, channel, loop=None):
         import youtube_dl
 
         loop = loop or asyncio.get_event_loop()
@@ -39,26 +41,17 @@ class YtdlAudio(discord.FFmpegPCMAudio):
         ytdl_opts = {
             'format': 'webm[abr>0]/bestaudio/best',
             'prefer_ffmpeg': True,
+            'default_search': 'auto',
+            'quiet': True
         }
-        if ytdl_options and isinstance(ytdl_options, dict):
-            ytdl_opts.update(ytdl_options)
         ytdl = youtube_dl.YoutubeDL(ytdl_opts)
-
         partial = functools.partial(ytdl.extract_info, url, download=False)
         info = await loop.run_in_executor(None, partial)
 
         if "entries" in info:
             info = info['entries'][0]
 
-        return cls(info, **kwargs)
-
-
-class Song(discord.PCMVolumeTransformer):
-    def __init__(self, source, requester, channel):
-        self.info = source.info
-        self.requester = requester
-        self.channel = channel
-        super().__init__(source)
+        return cls(info, requester, channel)
 
     def __str__(self):
         return f"**{self.info['title']}** from **{self.info.get('creator') or self.info['uploader']}** (duration: {duration_to_str(self.info['duration'])})"
@@ -199,11 +192,7 @@ class Music:
         await ctx.message.add_reaction('\N{HOURGLASS}')
 
         # Add the song to the playlist
-        opts = {
-            'default_search': 'auto',
-            'quiet': True
-        }
-        source = Song(await YtdlAudio.create(song, loop=ctx.bot.loop, ytdl_options=opts), ctx.author, ctx.channel)
+        source = await Song.create(song, ctx.author, ctx.channel, loop=ctx.bot.loop)
         try:
             ctx.music_state.playlist.put_nowait(source)
         except asyncio.QueueFull:
