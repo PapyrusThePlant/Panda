@@ -268,7 +268,7 @@ class Music:
         # Check if the song has to be skipped
         if len(ctx.music_state.skips) > ctx.music_state.min_skips or ctx.author == ctx.music_state.current_song.requester:
             ctx.music_state.skips.clear()
-            await ctx.music_state.play_next_song()
+            ctx.music_state.voice_client.stop()
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
