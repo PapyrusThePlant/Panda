@@ -97,7 +97,6 @@ class GuildMusicState:
     async def stop(self):
         self.playlist.clear()
         if self.voice_client:
-            self.voice_client.stop()
             await self.voice_client.disconnect()
             self.voice_client = None
 
@@ -155,7 +154,7 @@ class Music:
         """Displays the currently played song."""
         if ctx.music_state.is_playing():
             song = ctx.music_state.current_song
-            await ctx.send(f'Playing {song}. Volume at {song.volume * 100}% in {ctx.music_state.voice_client.channel.mention}')
+            await ctx.send(f'Playing {song}. Volume at {song.volume * 100}% in {ctx.voice_client.channel.mention}')
         else:
             await ctx.send('Not playing.')
 
@@ -187,8 +186,8 @@ class Music:
 
         destination = channel or ctx.author.voice.channel
 
-        if ctx.music_state.voice_client:
-            await ctx.music_state.voice_client.move_to(destination)
+        if ctx.voice_client:
+            await ctx.voice_client.move_to(destination)
         else:
             ctx.music_state.voice_client = await destination.connect()
 
@@ -203,8 +202,7 @@ class Music:
         await ctx.message.add_reaction('\N{HOURGLASS}')
 
         # Connect to the voice channel if needed
-        voice_client = ctx.music_state.voice_client
-        if voice_client is None or not voice_client.is_connected():
+        if ctx.voice_client is None or not ctx.voice_client.is_connected():
             await ctx.invoke(self.join)
 
         # Add the song to the playlist
@@ -232,15 +230,15 @@ class Music:
     @commands.has_permissions(manage_guild=True)
     async def pause(self, ctx):
         """Pauses the player."""
-        if ctx.music_state.voice_client:
-            ctx.music_state.voice_client.pause()
+        if ctx.voice_client:
+            ctx.voice_client.pause()
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def resume(self, ctx):
         """Resumes the player."""
-        if ctx.music_state.voice_client:
-            ctx.music_state.voice_client.resume()
+        if ctx.voice_client:
+            ctx.voice_client.resume()
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
@@ -279,7 +277,7 @@ class Music:
         # Check if the song has to be skipped
         if len(ctx.music_state.skips) > ctx.music_state.min_skips or ctx.author == ctx.music_state.current_song.requester:
             ctx.music_state.skips.clear()
-            ctx.music_state.voice_client.stop()
+            ctx.voice_client.stop()
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
