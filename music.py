@@ -57,9 +57,23 @@ class Song(discord.PCMVolumeTransformer):
         return f"**{self.info['title']}** from **{self.info.get('creator') or self.info['uploader']}** (duration: {duration_to_str(self.info['duration'])})"
 
 
+class Playlist(asyncio.Queue):
+    def __iter__(self):
+        return self._queue.__iter__()
+
+    def clear(self):
+        self._queue.clear()
+
+    def get_song(self):
+        return self.get_nowait()
+
+    def add_song(self, song):
+        self.put_nowait(song)
+
+
 class GuildMusicState:
     def __init__(self, loop):
-        self.playlist = asyncio.Queue(maxsize=50)
+        self.playlist = Playlist(maxsize=50)
         self.voice_client = None
         self.loop = loop
         self.player_volume = 0.5
@@ -80,11 +94,8 @@ class GuildMusicState:
         if self.voice_client:
             self.voice_client.source.volume = value
 
-    def clear(self):
-        self.playlist._queue.clear()
-
     async def stop(self):
-        self.clear()
+        self.playlist.clear()
         if self.voice_client:
             self.voice_client.stop()
             await self.voice_client.disconnect()
@@ -100,7 +111,7 @@ class GuildMusicState:
         if self.playlist.empty():
             await self.stop()
         else:
-            next_song = self.playlist.get_nowait()
+            next_song = self.playlist.get_song()
             next_song.volume = self.player_volume
             self.voice_client.play(next_song, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next_song(e), self.loop).result())
             await next_song.channel.send(f'Now playing {next_song}')
@@ -153,7 +164,7 @@ class Music:
         """Shows info about the current playlist."""
         info = 'Current playlist:\n'
         info_len = len(info)
-        for song in list(ctx.music_state.playlist._queue):
+        for song in ctx.music_state.playlist:
             s = str(song)
             l = len(s) + 1 # Counting the extra \n
             if info_len + l > 1995:
@@ -199,7 +210,7 @@ class Music:
         # Add the song to the playlist
         source = await Song.create(song, ctx.author, ctx.channel, loop=ctx.bot.loop)
         try:
-            ctx.music_state.playlist.put_nowait(source)
+            ctx.music_state.playlist.add_song(source)
         except asyncio.QueueFull:
             raise MusicError('Playlist is full, try again later.')
 
@@ -247,7 +258,7 @@ class Music:
     @commands.command()
     async def clear(self, ctx):
         """Clears the playlist."""
-        ctx.music_state.clear()
+        ctx.music_state.playlist.clear()
 
     @commands.command()
     async def skip(self, ctx):
