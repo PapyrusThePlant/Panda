@@ -14,7 +14,7 @@ with open('conf.json') as fp:
     conf = json.load(fp)
 
 # Complicated bot creation
-bot = commands.Bot(commands.when_mentioned_or(conf['prefix']))
+bot = commands.Bot(commands.when_mentioned_or(conf['prefix']), description='Never say no to Panda.')
 bot.load_extension('music')
 
 # For when the bot is shitting itself
