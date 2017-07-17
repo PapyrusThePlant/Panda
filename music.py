@@ -225,16 +225,16 @@ class Music:
         """
         await ctx.message.add_reaction('\N{HOURGLASS}')
 
-        # Connect to the voice channel if needed
-        if ctx.voice_client is None or not ctx.voice_client.is_connected():
-            await ctx.invoke(self.join)
-
         # Add the song to the playlist
         source = await Song.create(song, ctx.author, ctx.channel, loop=ctx.bot.loop)
         try:
             ctx.music_state.playlist.add_song(source)
         except asyncio.QueueFull:
             raise MusicError('Playlist is full, try again later.')
+
+        # Connect to the voice channel if needed
+        if ctx.voice_client is None or not ctx.voice_client.is_connected():
+            await ctx.invoke(self.join)
 
         # Start playing or notify it's been added to the playlist
         if not ctx.music_state.is_playing():
