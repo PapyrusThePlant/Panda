@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import pathlib
 
 import discord
 import discord.ext.commands as commands
@@ -43,10 +44,29 @@ class Song(discord.PCMVolumeTransformer):
         self.info = info
         self.requester = requester
         self.channel = channel
-        super().__init__(discord.FFmpegPCMAudio(info['url'], before_options='-nostdin', options='-vn'))
+        source = info.get('url', info.get('file', None))
+        if not source:
+            raise MusicError('Source not found.')
+        super().__init__(discord.FFmpegPCMAudio(source, before_options='-nostdin', options='-vn'))
 
     @classmethod
-    async def create(cls, url, requester, channel, loop=None):
+    async def create(cls, query, requester, channel, loop=None):
+        if pathlib.Path(query).is_file():
+            return cls.from_file(query, requester, channel)
+        else:
+            return await cls.from_ytdl(query, requester, channel, loop)
+
+    @classmethod
+    def from_file(cls, file, requester, channel):
+        info = {
+            'file': file,
+            'title': pathlib.Path(file).stem,
+            'creator': 'local file',
+        }
+        return cls(info, requester, channel)
+
+    @classmethod
+    async def from_ytdl(cls, url, requester, channel, loop=None):
         loop = loop or asyncio.get_event_loop()
         partial = functools.partial(cls.ytdl.extract_info, url, download=False)
         info = await loop.run_in_executor(None, partial)
@@ -57,7 +77,10 @@ class Song(discord.PCMVolumeTransformer):
         return cls(info, requester, channel)
 
     def __str__(self):
-        return f"**{self.info['title']}** from **{self.info.get('creator') or self.info['uploader']}** (duration: {duration_to_str(self.info['duration'])})"
+        title = f"**{self.info['title']}**"
+        creator = f"**{self.info.get('creator') or self.info['uploader']}**"
+        duration = f" (duration: {duration_to_str(self.info['duration'])})" if 'duration' in self.info else ''
+        return f'{title} from {creator}{duration}'
 
 
 class Playlist(asyncio.Queue):
