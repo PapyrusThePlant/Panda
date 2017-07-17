@@ -7,8 +7,6 @@ import youtube_dl
 
 
 def setup(bot):
-    if not discord.opus.is_loaded():
-        discord.opus.load_opus('opus')
     bot.add_cog(Music(bot))
 
 
