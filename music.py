@@ -73,6 +73,19 @@ class Playlist(asyncio.Queue):
     def add_song(self, song):
         self.put_nowait(song)
 
+    def __str__(self):
+        info = 'Current playlist:\n'
+        info_len = len(info)
+        for song in self:
+            s = str(song)
+            l = len(s) + 1 # Counting the extra \n
+            if info_len + l > 1995:
+                info += '[...]'
+                break
+            info += f'{s}\n'
+            info_len += l
+        return info
+
 
 class GuildMusicState:
     def __init__(self, loop):
@@ -146,11 +159,7 @@ class Music:
             pass # /shrug
 
     def get_music_state(self, guild_id):
-        state = self.music_states.get(guild_id)
-        if not state:
-            state = GuildMusicState(self.bot.loop)
-            self.music_states[guild_id] = state
-        return state
+        return self.music_states.setdefault(guild_id, GuildMusicState(self.bot.loop))
 
     @commands.command()
     async def status(self, ctx):
@@ -164,18 +173,7 @@ class Music:
     @commands.command()
     async def playlist(self, ctx):
         """Shows info about the current playlist."""
-        info = 'Current playlist:\n'
-        info_len = len(info)
-        for song in ctx.music_state.playlist:
-            s = str(song)
-            l = len(s) + 1 # Counting the extra \n
-            if info_len + l > 1995:
-                info += '[...]'
-                break
-            info += f'{s}\n'
-            info_len += l
-
-        await ctx.send(info)
+        await ctx.send(f'{ctx.music_state.playlist}')
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
@@ -254,7 +252,7 @@ class Music:
         """Sets the volume of the player, scales from 0 to 100."""
         if volume < 0 or volume > 100:
             raise MusicError('The volume level has to be between 0 and 100.')
-        ctx.music_state.volume = volume/100
+        ctx.music_state.volume = volume / 100
 
     @commands.command()
     async def clear(self, ctx):
