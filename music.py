@@ -3,6 +3,7 @@ import functools
 
 import discord
 import discord.ext.commands as commands
+import youtube_dl
 
 
 def setup(bot):
@@ -26,6 +27,20 @@ class MusicError(commands.UserInputError):
 
 
 class Song(discord.PCMVolumeTransformer):
+    ytdl_opts = {
+        'default_search': 'auto',
+        'format': 'bestaudio/best',
+        'ignoreerrors': False,
+        'source_address': '0.0.0.0', # Make all connections via IPv4
+        'nocheckcertificate': True,
+        'restrictfilenames': True,
+        'logtostderr': False,
+        'no_warnings': True,
+        'quiet': True,
+        'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s'
+    }
+    ytdl = youtube_dl.YoutubeDL(ytdl_opts)
+
     def __init__(self, info, requester, channel):
         self.info = info
         self.requester = requester
@@ -34,24 +49,8 @@ class Song(discord.PCMVolumeTransformer):
 
     @classmethod
     async def create(cls, url, requester, channel, loop=None):
-        import youtube_dl
-
         loop = loop or asyncio.get_event_loop()
-
-        ytdl_opts = {
-            'default_search': 'auto',
-            'format': 'bestaudio/best',
-            'ignoreerrors': False,
-            'source_address': '0.0.0.0', # Make all connections via IPv4
-            'nocheckcertificate': True,
-            'restrictfilenames': True,
-            'logtostderr': False,
-            'no_warnings': True,
-            'quiet': True,
-            'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s'
-        }
-        ytdl = youtube_dl.YoutubeDL(ytdl_opts)
-        partial = functools.partial(ytdl.extract_info, url, download=False)
+        partial = functools.partial(cls.ytdl.extract_info, url, download=False)
         info = await loop.run_in_executor(None, partial)
 
         if "entries" in info:
