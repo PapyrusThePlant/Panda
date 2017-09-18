@@ -1,5 +1,6 @@
 import asyncio
-import functools
+import logging
+import os
 import pathlib
 
 import discord
@@ -33,6 +34,7 @@ class Song(discord.PCMVolumeTransformer):
         'source_address': '0.0.0.0', # Make all connections via IPv4
         'nocheckcertificate': True,
         'restrictfilenames': True,
+        'logger': logging.getLogger(__name__),
         'logtostderr': False,
         'no_warnings': True,
         'quiet': True,
@@ -44,6 +46,7 @@ class Song(discord.PCMVolumeTransformer):
         self.info = info
         self.requester = requester
         self.channel = channel
+        self.filename = info.get('_filename', self.ytdl.prepare_filename(info))
         source = info.get('url', info.get('file', None))
         if not source:
             raise MusicError('Source not found.')
@@ -68,8 +71,7 @@ class Song(discord.PCMVolumeTransformer):
     @classmethod
     async def from_ytdl(cls, url, requester, channel, loop=None):
         loop = loop or asyncio.get_event_loop()
-        partial = functools.partial(cls.ytdl.extract_info, url, download=False)
-        info = await loop.run_in_executor(None, partial)
+        info = await loop.run_in_executor(None, cls.ytdl.extract_info, url)
 
         if "entries" in info:
             info = info['entries'][0]
@@ -142,16 +144,19 @@ class GuildMusicState:
     def is_playing(self):
         return self.voice_client and self.voice_client.is_playing()
 
-    async def play_next_song(self, error=None):
+    async def play_next_song(self, song=None, error=None):
         if error:
             await self.current_song.channel.send(f'An error has occurred while playing {self.current_song}: {error}')
+
+        if song and song.filename not in [s.filename for s in self.playlist]:
+            os.remove(song.filename)
 
         if self.playlist.empty():
             await self.stop()
         else:
             next_song = self.playlist.get_song()
             next_song.volume = self.player_volume
-            self.voice_client.play(next_song, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next_song(e), self.loop).result())
+            self.voice_client.play(next_song, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next_song(next_song, e), self.loop).result())
             await next_song.channel.send(f'Now playing {next_song}')
 
 
