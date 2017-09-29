@@ -54,7 +54,12 @@ class Song(discord.PCMVolumeTransformer):
 
     @classmethod
     async def create(cls, query, requester, channel, loop=None):
-        if pathlib.Path(query).is_file():
+        try:
+            is_file = pathlib.Path(query).is_file()
+        except:
+            is_file = False
+
+        if is_file:
             return cls.from_file(query, requester, channel)
         else:
             return await cls.from_ytdl(query, requester, channel, loop)
