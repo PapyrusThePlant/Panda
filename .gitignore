@@ -1,6 +1,7 @@
 # Build files and folders
 *.pyc
-venv/
+*.lock
+.venv/
 
 # Development files and folders
 .idea/
