@@ -2,18 +2,18 @@
 
 PIPENV_VENV_IN_PROJECT=1
 
-python --version > /dev/null 2>&1
+python3 --version > /dev/null 2>&1
 if [ $? != 0 ]
 then
-    echo Cannot find Python executable, make sure it is installed and added to your PATH.
+    echo Cannot find Python3 executable, make sure it is installed and added to your PATH.
     read -p "Press [Enter] to exit..."
     exit 0
 fi
 
-python -c "import pipenv" > /dev/null 2>&1
+python3 -c "import pipenv" > /dev/null 2>&1
 if [ $? != 0 ]
 then
-    python -m pip install --user pipenv
+    python3 -m pip install --user pipenv
 fi
 
 if [ ! -d '.venv' ]
@@ -22,4 +22,4 @@ then
 fi
 
 rm panda.log
-pipenv run python panda.py
+pipenv run python3 panda.py
