@@ -69,14 +69,13 @@ class SongInfo:
     @classmethod
     async def create(cls, query, requester, channel, loop=None):
         try:
-            is_file = pathlib.Path(query).is_file()
-        except:
-            is_file = False
+            # Path.is_file() can throw a OSError on syntactically incorrect paths, like urls.
+            if pathlib.Path(query).is_file():
+                return cls.from_file(query, requester, channel)
+        except OSError:
+            pass
 
-        if is_file:
-            return cls.from_file(query, requester, channel)
-        else:
-            return await cls.from_ytdl(query, requester, channel, loop=loop)
+        return await cls.from_ytdl(query, requester, channel, loop=loop)
 
     @classmethod
     def from_file(cls, file, requester, channel):
