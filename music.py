@@ -20,7 +20,13 @@ def duration_to_str(duration):
     days, hours = divmod(hours, 24)
 
     # Create a fancy string
-    return f"{f'{days} days, ' if days > 0 else ''}{f'{hours} hours, ' if hours > 0 else ''}{f'{minutes} minutes, ' if minutes > 0 else ''}{seconds} seconds"
+    duration = []
+    if days > 0: duration.append(f'{days} days')
+    if hours > 0: duration.append(f'{hours} hours')
+    if minutes > 0: duration.append(f'{minutes} minutes')
+    if seconds > 0 or len(duration) == 0: duration.append(f'{seconds} seconds')
+
+    return ', '.join(duration)
 
 
 class MusicError(commands.UserInputError):
