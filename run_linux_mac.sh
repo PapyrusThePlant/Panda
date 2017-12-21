@@ -16,6 +16,13 @@ then
     python3 -m pip install --user pipenv
 fi
 
+pipenv --version > /dev/null 2>&1
+if [ $? != 0 ]
+then
+    pipenv_path=$(python -m site --user-base)/bin
+    PATH+=:$pipenv_path
+fi
+
 if [ ! -d '.venv' ]
 then
     pipenv --bare install
