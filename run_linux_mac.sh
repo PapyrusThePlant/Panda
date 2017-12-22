@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PIPENV_VENV_IN_PROJECT=1
+export PIPENV_VENV_IN_PROJECT=1
 
 python3 --version > /dev/null 2>&1
 if [ $? != 0 ]
