@@ -26,6 +26,13 @@ for /F "tokens=* USEBACKQ" %%p IN (`python -m site --user-base`) do (
 
 if not exist ".venv" ( pipenv --bare install )
 
+pipenv run python3 -c "exit(__import__('discord').opus.is_loaded())" > NUL 2>&1
+if %ERRORLEVEL% equ 0 (
+    echo Cannot find libopus on your system, make sure it is installed.
+    pause
+    exit /B 0
+)
+
 del /Q panda.log
 pipenv run python panda.py
 pause

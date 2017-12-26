@@ -28,5 +28,13 @@ then
     pipenv --bare install
 fi
 
+pipenv run python3 -c "exit(__import__('discord').opus.is_loaded())" > /dev/null 2>&1
+if [ $? == 0 ]
+then
+    echo Cannot find libopus on your system, make sure it is installed.
+    read -p "Press [Enter] to exit..."
+    exit 0
+fi
+
 rm panda.log
 pipenv run python3 panda.py
