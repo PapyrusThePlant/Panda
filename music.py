@@ -65,6 +65,7 @@ class SongInfo:
         self.channel = channel
         self.filename = info.get('_filename', self.ytdl.prepare_filename(self.info))
         self.downloaded = asyncio.Event()
+        self.local_file = '_filename' in info
 
     @classmethod
     async def create(cls, query, requester, channel, loop=None):
@@ -218,7 +219,7 @@ class GuildMusicState:
         if error:
             await self.current_song.channel.send(f'An error has occurred while playing {self.current_song}: {error}')
 
-        if song and song.filename not in [s.filename for s in self.playlist]:
+        if song and not song.local_file and song.filename not in [s.filename for s in self.playlist]:
             os.remove(song.filename)
 
         if self.playlist.empty():
