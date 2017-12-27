@@ -19,7 +19,7 @@ fi
 pipenv --version > /dev/null 2>&1
 if [ $? != 0 ]
 then
-    pipenv_path=$(python -m site --user-base)/bin
+    pipenv_path=$(python3 -m site --user-base)/bin
     PATH+=:$pipenv_path
 fi
 
