@@ -1,4 +1,5 @@
 @echo off
+SETLOCAL EnableDelayedExpansion
 chcp 65001 > NUL
 
 set PIPENV_VENV_IN_PROJECT=1
@@ -19,7 +20,7 @@ pipenv --version > NUL 2>&1
 if %ERRORLEVEL% neq 0 (
     echo Adding pipenv to PATH...
     for /F %%p IN ('python -m site --user-site') do set path_pipenv=%%p
-    set PATH=%PATH%;%path_pipenv:site-packages=Scripts%
+    set PATH=!PATH!;!path_pipenv:site-packages=Scripts!
 )
 
 if not exist ".venv" ( pipenv --bare install )
