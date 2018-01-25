@@ -2,6 +2,14 @@
 
 export PIPENV_VENV_IN_PROJECT=1
 
+git --version > /dev/null 2>&1
+if [ $? != 0 ]
+then
+    echo Cannot find Git executable, make sure it is installed and added to your PATH.
+    read -p "Press [Enter] to exit..."
+    exit 0
+fi
+
 python3 --version > /dev/null 2>&1
 if [ $? != 0 ]
 then
@@ -26,6 +34,8 @@ fi
 if [ ! -d '.venv' ]
 then
     pipenv --bare install
+else
+    pipenv --bare update
 fi
 
 pipenv run python3 -c "exit(__import__('discord').opus.is_loaded())" > /dev/null 2>&1
