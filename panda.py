@@ -17,6 +17,10 @@ with open('conf.json') as fp:
 bot = commands.Bot(commands.when_mentioned_or(conf['prefix']), description='Never say no to Panda.')
 bot.load_extension('music')
 
+@bot.event
+async def on_ready():
+    print("Connected to", bot.user.name)
+
 # For when the bot is shitting itself
 @bot.command()
 @commands.has_permissions(manage_guild=True)
