@@ -1,0 +1,3 @@
+pynacl
+git+https://github.com/PapyrusThePlant/discord.py.git#egg=discord.py[voice]
+youtube-dl
