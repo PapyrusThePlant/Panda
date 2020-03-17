@@ -233,24 +233,24 @@ class GuildMusicState:
             await next_song_info.channel.send(f'Now playing {next_song_info}')
 
 
-class Music:
+class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.music_states = {}
 
-    def __unload(self):
+    def cog_unload(self):
         for state in self.music_states.values():
             self.bot.loop.create_task(state.stop())
 
-    def __local_check(self, ctx):
+    def cog_check(self, ctx):
         if not ctx.guild:
             raise commands.NoPrivateMessage('This command cannot be used in a private message.')
         return True
 
-    async def __before_invoke(self, ctx):
+    async def cog_before_invoke(self, ctx):
         ctx.music_state = self.get_music_state(ctx.guild.id)
 
-    async def __error(self, ctx, error):
+    async def cog_command_error(self, ctx, error):
         if not isinstance(error, commands.UserInputError):
             raise error
 
