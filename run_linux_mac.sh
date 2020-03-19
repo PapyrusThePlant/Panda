@@ -23,9 +23,14 @@ then
 fi
 
 # Create the virtual env if necessary
-if [[ ! -d '.venv' ]]
+if ! [[ -e .venv/bin/activate ]]
 then
-    python3 -m venv .venv
+	echo Creating virtual environment
+    # Shield from systems needing to install the venv module separately
+    if ! python3 -m venv .venv
+    then
+    	exit 1
+    fi
 fi
 
 # Activate and update the virtual env
