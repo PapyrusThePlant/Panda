@@ -1,3 +1,4 @@
-pynacl
 discord.py[voice]
+psutil
+pynacl
 youtube-dl
