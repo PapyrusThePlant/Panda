@@ -42,7 +42,7 @@ if %ERRORLEVEL% equ 0 (
     exit /B 0
 )
 
-del /Q panda.log
+del /Q logs\panda.log
 python panda.py
 
 REM Deactivate the virtual env

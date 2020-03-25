@@ -45,7 +45,7 @@ then
   exit 0
 fi
 
-rm panda.log
+rm logs/panda.log
 python3 panda.py
 
 # Deactivate the virtual env
