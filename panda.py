@@ -1,7 +1,7 @@
 import json
 import logging
-import os
 import psutil
+import subprocess
 import time
 
 import discord
@@ -42,8 +42,7 @@ def duration_to_str(duration):
 
 @bot.command(aliases=['infos'])
 async def info(ctx):
-	with os.popen('git log --pretty=format:"[`%h`](https://github.com/PapyrusThePlant/Panda/commit/%h) %s" -n 5') as fp:
-		latest_commits = fp.read().strip()
+	latest_commits = subprocess.check_output(['git', 'log', '--pretty=format:[`%h`](https://github.com/PapyrusThePlant/Panda/commit/%h) %s', '-n', '5']).decode('utf-8')
 
 	embed = discord.Embed(description='[Click here to get your own Panda!](https://github.com/PapyrusThePlant/Panda)', colour=discord.Colour.blurple())
 	embed.set_thumbnail(url='https://raw.githubusercontent.com/PapyrusThePlant/Panda/master/images/panda.jpg')
