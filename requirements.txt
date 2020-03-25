@@ -1,4 +1,5 @@
 discord.py[voice]
+peony-twitter
 psutil
 pynacl
 youtube-dl
