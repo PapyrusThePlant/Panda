@@ -42,11 +42,11 @@ def duration_to_str(duration):
 
 @bot.command(aliases=['infos'])
 async def info(ctx):
-	with os.popen('git log --pretty=format:"[`%h`](https://github.com/PapyrusThePlant/MusicPanda/commit/%h) %s" -n 5') as fp:
+	with os.popen('git log --pretty=format:"[`%h`](https://github.com/PapyrusThePlant/Panda/commit/%h) %s" -n 5') as fp:
 		latest_commits = fp.read().strip()
 
-	embed = discord.Embed(description='[Click here to get your own Panda!](https://github.com/PapyrusThePlant/MusicPanda)', colour=discord.Colour.blurple())
-	embed.set_thumbnail(url='https://raw.githubusercontent.com/PapyrusThePlant/MusicPanda/master/images/panda.jpg')
+	embed = discord.Embed(description='[Click here to get your own Panda!](https://github.com/PapyrusThePlant/Panda)', colour=discord.Colour.blurple())
+	embed.set_thumbnail(url='https://raw.githubusercontent.com/PapyrusThePlant/Panda/master/images/panda.jpg')
 	embed.set_author(name='Author : Papyrus#0095', icon_url='https://cdn.discordapp.com/avatars/145110704293281792/2775b3ee7b6a865722b3f6a27da8b14a.webp?size=1024')
 	embed.add_field(name='Command prefixes', value=f'`@{ctx.guild.me.display_name} `, `{conf["prefix"]}`', inline=False)
 	embed.add_field(name='CPU', value=f'{psutil.cpu_percent()}%')
