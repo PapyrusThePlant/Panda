@@ -47,7 +47,6 @@ class SongInfo:
         'default_search': 'auto',
         'format': 'bestaudio/best',
         'ignoreerrors': True,
-        'source_address': '0.0.0.0', # Make all connections via IPv4
         'nocheckcertificate': True,
         'restrictfilenames': True,
         'logger': logging.getLogger(__name__),

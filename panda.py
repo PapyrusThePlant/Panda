@@ -42,6 +42,7 @@ def duration_to_str(duration):
 
 @bot.command(aliases=['infos'])
 async def info(ctx):
+	"""Shows info about the bot."""
 	latest_commits = subprocess.check_output(['git', 'log', '--pretty=format:[`%h`](https://github.com/PapyrusThePlant/Panda/commit/%h) %s', '-n', '5']).decode('utf-8')
 
 	embed = discord.Embed(description='[Click here to get your own Panda!](https://github.com/PapyrusThePlant/Panda)', colour=discord.Colour.blurple())
@@ -101,8 +102,8 @@ async def reload(ctx):
 	This command requires the Manage Server permission.
 	"""
 	for cog_name in conf['extensions']:
-		await ctx.invoke(load, cog_name)
 		await ctx.invoke(unload, cog_name)
+		await ctx.invoke(load, cog_name)
 
 	await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 

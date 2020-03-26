@@ -45,40 +45,44 @@ class Twitter(commands.Cog):
         finally:
             await ctx.message.add_reaction('\N{CROSS MARK}')
 
-    def conf_cleanup(self, *channels):
+    def remove_channels_from_conf(self, *channels):
         removed = 0
         unfollowed = 0
-        for channel in channels:
-            for user_id, conf in self.conf.follows.copy().items():
-                try:
-                    del conf.channels[channel.id]
-                except KeyError:
-                    pass
-                else:
-                    removed += 1
+        channels = set(channels)
+        for user_id, conf in self.conf.follows.copy().items():
+            map(conf.channels.pop, channels & set(self.conf.follows))
 
-                if len(conf.channels) == 0:
-                    del self.conf.follows[user_id]
-                    unfollowed += 1
-            self.conf.save()
+            removed += 1
+
+            if len(conf.channels) == 0:
+                del self.conf.follows[user_id]
+                unfollowed += 1
+        self.conf.save()
+
         if unfollowed > 0:
             self.stream_restart()
         return removed, unfollowed
 
+    @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
-        removed, unfollowed = self.conf_cleanup(channel)
+        removed, unfollowed = self.remove_channels_from_conf(channel)
         log.info(f'Deletion of channel {channel.id} removed {removed} feeds and unfollowed {unfollowed}')
 
+    @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        removed, unfollowed = self.conf_cleanup(*guild.text_channels)
+        removed, unfollowed = self.remove_channels_from_conf(c.id for c in guild.text_channels)
         log.info(f'Removal of guild {guild.id} removed {removed} feeds and unfollowed {unfollowed}')
 
     def build_tweet_url(self, screen_name, tweet_id):
         return f'https://twitter.com/{screen_name}/status/{tweet_id}'
 
     async def dispatch_tweet(self, tweet):
-        tweet_url = self.build_tweet_url(tweet["user"]["screen_name"], tweet["id"])
-        conf = self.conf.follows[tweet['user']['id']]
+        tweet_url = self.build_tweet_url(tweet['user']['screen_name'], tweet['id'])
+        try:
+            conf = self.conf.follows[tweet['user']['id']]
+        except KeyError as e:
+            return  # Apparently peony dispatch retweets of any users we're following as well
+
         for channel_id in conf.channels:
             await self.bot.get_channel(int(channel_id)).send(tweet_url)
             conf.channels[channel_id].last_tweet_id = tweet['id']
@@ -103,7 +107,7 @@ class Twitter(commands.Cog):
             params['count'] = limit
 
         request = self.twitter_client.api.statuses.user_timeline.get(**params)
-        responses = request.iterator.with_since_id()
+        responses = request.iterator.with_since_id(force=False)
 
         tweets = []
         async for chunk in responses:
@@ -114,11 +118,19 @@ class Twitter(commands.Cog):
         for user_id, conf in self.conf.follows.items():
             yield await self.get_timeline(user_id=user_id)
 
+    async def update_timelines(self):
+        async for timeline in self.get_timelines():
+            for timeline_tweet in reversed(timeline):
+                await self.dispatch_tweet(timeline_tweet)
+
     def stream_start(self):
-        self.stream_task = self.bot.loop.create_task(self.stream_tweets())
+        if len(self.conf.follows) > 0 and self.stream_task is None:
+            self.stream_task = self.bot.loop.create_task(self.stream_tweets())
 
     def stream_stop(self):
-        self.stream_task.cancel()
+        if self.stream_task is not None:
+            self.stream_task.cancel()
+            self.stream_task = None
 
     def stream_restart(self):
         self.stream_stop()
@@ -130,9 +142,7 @@ class Twitter(commands.Cog):
                 if peony.events.on_tweet(data):
                     await self.dispatch_tweet(data)
                 elif peony.events.on_connect(data):
-                    async for timeline in self.get_timelines():
-                        for timeline_tweet in reversed(timeline):
-                            await self.dispatch_tweet(timeline_tweet)
+                    await self.update_timelines()
 
     @commands.command()
     async def list(self, ctx):
@@ -214,6 +224,7 @@ class Twitter(commands.Cog):
         conf.channels[ctx.channel.id] = config.ConfigElement(last_tweet_id=last_tweet_id)
         self.conf.save()
 
+        self.stream_restart()
         await ctx.send(tweet_url)
         await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
@@ -236,6 +247,7 @@ class Twitter(commands.Cog):
 
         if len(conf.channels) == 0:
             del self.conf.follows[user_id]
+            self.stream_restart()
         self.conf.save()
 
         await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
