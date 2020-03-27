@@ -5,8 +5,8 @@ import operator
 import os
 
 
-# Helper function to perform lookups in collections
 def get(iterable, **attrs):
+    """Helper function to perform lookups in collections."""
     if isinstance(iterable, dict):
         for key, elem in iterable.items():
             if all(operator.attrgetter(attr)(elem) == value for attr, value in attrs.items()):
@@ -20,7 +20,8 @@ def get(iterable, **attrs):
 
 
 class Config:
-    """The config object, created from a json file"""
+    """The config object, created from a json file."""
+
     def __init__(self, file, **options):
         super().__setattr__('_data', {})
         self.file = file
@@ -32,7 +33,7 @@ class Config:
             self._data = json.load(fp, object_pairs_hook=self.object_hook)
 
     def save(self):
-        """Saves the config on disk"""
+        """Saves the config on disk."""
         tmp_file = self.file + '~'
         with open(tmp_file, 'w', encoding=self.encoding) as fp:
             json.dump(self._data, fp, ensure_ascii=True, cls=self.encoder)
@@ -57,7 +58,8 @@ class Config:
 
 
 class ConfigElement(collections.Mapping):
-    """The main data holding class"""
+    """The main data holding class."""
+
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -73,31 +75,37 @@ class ConfigElement(collections.Mapping):
 
 
 class _ConfigEncoder(json.JSONEncoder):
-    """Default JSON encoder."""
-    def default(self, o):
-        if isinstance(o, ConfigElement):
-            d = o.__dict__.copy()
+    """Custom JSON encoder."""
 
+    def default(self, o):
+        """Support of ConfigElement's serialization."""
+        if isinstance(o, ConfigElement):
             # Ignore 'private' attributes
-            for k in o.__dict__.keys():
+            for k in o.__dict__.copy():
                 if k[0] == '_':
-                    del d[k]
+                    del o.__dict__[k]
 
             # The following is dependant on the file location
-            d['__class__'] = f'{__name__}.{o.__class__.__qualname__}'
-            return d
+            o.__dict__['__class__'] = f'{__name__}.{o.__class__.__qualname__}'
+            return o
 
+        # Let the base class default method raise the TypeError
         return super().default(self, o)
 
 
 class _ConfigDecoder:
-    """Default JSON decoder, do not instantiate as the inspect magic involved is not tailored for it."""
+    """Custom JSON decoder.
+
+    Do not instantiate as the inspect magic involved is not tailored for it.
+    """
+
     def __init__(self):
         # Back once to reach Config.__init__
         # Back twice to reach the caller
         self._globals = inspect.currentframe().f_back.f_back.f_globals
 
     def decode(self, o):
+        """Support the deserialization of ConfigElements objects."""
         o = collections.OrderedDict(o)
         if '__class__' in o:
             name = o.pop('__class__')
@@ -118,13 +126,13 @@ class _ConfigDecoder:
                     raise TypeError('Expected Class or Module.')
 
             return obj(**o)
-        else:
-            # Try to convert keys to ints when possible
-            for k, v in o.copy().items():
-                try:
-                    o[int(k)] = v
-                except ValueError:
-                    pass
-                else:
-                    del o[k]
-            return o
+
+        # Try to convert keys to ints when possible
+        for k, v in o.copy().items():
+            try:
+                o[int(k)] = v
+            except ValueError:
+                pass
+            else:
+                del o[k]
+        return o

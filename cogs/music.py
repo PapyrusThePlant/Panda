@@ -10,16 +10,16 @@ import youtube_dl
 
 
 def setup(bot):
+    """Extension's entry point."""
     bot.add_cog(Music(bot))
 
 
 def duration_to_str(duration):
-    # Extract minutes, hours and days
+    """Converts a timestamp to a string representation."""
     minutes, seconds = divmod(duration, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
 
-    # Create a fancy string
     duration = []
     if days > 0: duration.append(f'{days} days')
     if hours > 0: duration.append(f'{hours} hours')
@@ -30,19 +30,23 @@ def duration_to_str(duration):
 
 
 class MusicError(commands.UserInputError):
+    """Base exception for errors involving the Music cog."""
     pass
 
 
 class Song(discord.PCMVolumeTransformer):
-    def __init__(self, song_info):
+    """Represents a song to play."""
+
+    def __init__(self, song_info, volume=1.0):
         self.info = song_info.info
         self.requester = song_info.requester
         self.channel = song_info.channel
         self.filename = song_info.filename
-        super().__init__(discord.FFmpegPCMAudio(self.filename, before_options='-nostdin', options='-vn'))
+        super().__init__(discord.FFmpegPCMAudio(self.filename, before_options='-nostdin', options='-vn'), volume=volume)
 
 
 class SongInfo:
+    """Represents a Song's info."""
     ytdl_opts = {
         'default_search': 'auto',
         'format': 'bestaudio/best',
@@ -68,6 +72,7 @@ class SongInfo:
 
     @classmethod
     async def create(cls, query, requester, channel, loop=None):
+        """Class method to create a SongInfo."""
         try:
             # Path.is_file() can throw a OSError on syntactically incorrect paths, like urls.
             if pathlib.Path(query).is_file():
@@ -79,6 +84,7 @@ class SongInfo:
 
     @classmethod
     def from_file(cls, file, requester, channel):
+        """Class method to create a SongInfo from a file on disk."""
         path = pathlib.Path(file)
         if not path.exists():
             raise MusicError(f'File {file} not found.')
@@ -92,6 +98,7 @@ class SongInfo:
 
     @classmethod
     async def from_ytdl(cls, request, requester, channel, loop=None):
+        """Class method to create a SongInfo using ytdl."""
         loop = loop or asyncio.get_event_loop()
 
         # Get sparse info about our query
@@ -135,12 +142,14 @@ class SongInfo:
         return cls(info, requester, channel)
 
     async def download(self, loop):
+        """Downloads the song file with ytdl."""
         if not pathlib.Path(self.filename).exists():
             partial = functools.partial(self.ytdl.extract_info, self.info['webpage_url'], download=True)
             self.info = await loop.run_in_executor(None, partial)
         self.downloaded.set()
 
     async def wait_until_downloaded(self):
+        """Helper function to wait until the song file has been downloaded."""
         await self.downloaded.wait()
 
     def __str__(self):
@@ -151,35 +160,46 @@ class SongInfo:
 
 
 class Playlist(asyncio.Queue):
+    """Represents a playlist."""
+
     def __iter__(self):
         return self._queue.__iter__()
 
     def clear(self):
+        """Clears the playlist from its items."""
         for song in self._queue:
             os.remove(song.filename)
         self._queue.clear()
 
     def get_song(self):
+        """Gets the first item of the playlist."""
         return self.get_nowait()
 
     def add_song(self, song):
+        """Adds an item to the playlist."""
         self.put_nowait(song)
 
     def __str__(self):
         info = 'Current playlist:\n'
         info_len = len(info)
+
         for song in self:
-            s = str(song)
-            l = len(s) + 1 # Counting the extra \n
-            if info_len + l > 1995:
+            song_repr = f'{song}\n'
+            song_repr_len = len(song_repr)
+
+            if info_len + song_repr_len > 1995:
                 info += '[...]'
                 break
-            info += f'{s}\n'
-            info_len += l
+
+            info += song_repr
+            info_len += song_repr_len
+
         return info
 
 
 class GuildMusicState:
+    """The music state of a guild."""
+
     def __init__(self, loop):
         self.playlist = Playlist(maxsize=50)
         self.voice_client = None
@@ -190,28 +210,34 @@ class GuildMusicState:
 
     @property
     def current_song(self):
+        """Returns the song that is currently played."""
         return self.voice_client.source
 
     @property
     def volume(self):
+        """Returns the volume of the audio player."""
         return self.player_volume
 
     @volume.setter
     def volume(self, value):
+        """Sets the volume of the audio player."""
         self.player_volume = value
         if self.voice_client:
             self.voice_client.source.volume = value
 
     async def stop(self):
+        """Clears the playlist and stops the player."""
         self.playlist.clear()
         if self.voice_client:
             await self.voice_client.disconnect()
             self.voice_client = None
 
     def is_playing(self):
+        """Indicates if we're currently playing audio."""
         return self.voice_client and self.voice_client.is_playing()
 
     async def play_next_song(self, song=None, error=None):
+        """Callback called after the voice_client has finished playing a source."""
         if error:
             await self.current_song.channel.send(f'An error has occurred while playing {self.current_song}: {error}')
 
@@ -223,30 +249,35 @@ class GuildMusicState:
         else:
             next_song_info = self.playlist.get_song()
             await next_song_info.wait_until_downloaded()
-            source = Song(next_song_info)
-            source.volume = self.player_volume
+            source = Song(next_song_info, self.player_volume)
             self.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next_song(next_song_info, e), self.loop).result())
             await next_song_info.channel.send(f'Now playing {next_song_info}')
 
 
 class Music(commands.Cog):
+    """🎵🐼"""
+
     def __init__(self, bot):
         self.bot = bot
         self.music_states = {}
 
     def cog_unload(self):
+        """Handles special unloading."""
         for state in self.music_states.values():
             self.bot.loop.create_task(state.stop())
 
     def cog_check(self, ctx):
+        """Extra checks for the cog's commands."""
         if not ctx.guild:
             raise commands.NoPrivateMessage('This command cannot be used in a private message.')
         return True
 
     async def cog_before_invoke(self, ctx):
-        ctx.music_state = self.get_music_state(ctx.guild.id)
+        """Pre invoke hook for the cog's commands."""
+        ctx.music_state = self.music_states.setdefault(ctx.guild.id, GuildMusicState(self.bot.loop))
 
     async def cog_command_error(self, ctx, error):
+        """Error handler for the cog's commands."""
         if not isinstance(error, (commands.UserInputError, commands.CheckFailure)):
             raise error
 
@@ -254,9 +285,6 @@ class Music(commands.Cog):
             await ctx.send(error)
         except discord.Forbidden:
             pass # /shrug
-
-    def get_music_state(self, guild_id):
-        return self.music_states.setdefault(guild_id, GuildMusicState(self.bot.loop))
 
     @commands.command()
     async def status(self, ctx):
@@ -326,6 +354,7 @@ class Music(commands.Cog):
 
     @play.error
     async def play_error(self, ctx, error):
+        """Error handler for the `play ` command."""
         await ctx.message.remove_reaction('\N{HOURGLASS}', ctx.me)
         await ctx.message.add_reaction('\N{CROSS MARK}')
 
