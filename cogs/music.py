@@ -156,10 +156,7 @@ class Playlist(asyncio.Queue):
 
     def clear(self):
         for song in self._queue:
-            try:
-                os.remove(song.filename)
-            except:
-                pass
+            os.remove(song.filename)
         self._queue.clear()
 
     def get_song(self):
@@ -250,7 +247,7 @@ class Music(commands.Cog):
         ctx.music_state = self.get_music_state(ctx.guild.id)
 
     async def cog_command_error(self, ctx, error):
-        if not isinstance(error, commands.UserInputError):
+        if not isinstance(error, (commands.UserInputError, commands.CheckFailure)):
             raise error
 
         try:

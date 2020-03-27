@@ -35,7 +35,7 @@ class Twitter(commands.Cog):
         return True
 
     async def cog_command_error(self, ctx, error):
-        if not isinstance(error, commands.UserInputError):
+        if not isinstance(error, (commands.UserInputError, commands.CheckFailure)):
             raise error
 
         try:
