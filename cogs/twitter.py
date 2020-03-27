@@ -80,7 +80,7 @@ class Twitter(commands.Cog):
         tweet_url = self.build_tweet_url(tweet['user']['screen_name'], tweet['id'])
         try:
             conf = self.conf.follows[tweet['user']['id']]
-        except KeyError as e:
+        except KeyError:
             return  # Apparently peony dispatch retweets of any users we're following as well
 
         for channel_id in conf.channels:
@@ -149,7 +149,7 @@ class Twitter(commands.Cog):
         """Lists the followed channels on the server."""
         follows = {}
         for conf in self.conf.follows.values():
-            for channel_id in conf.channels:
+            for channel_id in set(conf.channels) & set(c.id for c in ctx.guild.text_channels):
                 follows.setdefault(discord.utils.get(ctx.guild.text_channels, id=channel_id), []).append(f'@\N{ZERO WIDTH SPACE}{conf.screen_name}')
 
         if len(follows) == 0:
