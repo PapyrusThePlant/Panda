@@ -190,6 +190,7 @@ class Twitter(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
+    @commands.has_permissions(manage_guild=True)
     async def follow(self, ctx, handle):
         """Follows a Twitter channel.
 
@@ -229,6 +230,7 @@ class Twitter(commands.Cog):
         await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
     @commands.command()
+    @commands.has_permissions(manage_guild=True)
     async def unfollow(self, ctx, handle):
         """Unfollows a Twitter channel.
 
