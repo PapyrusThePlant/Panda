@@ -96,14 +96,22 @@ async def unload(ctx, name):
 
 @bot.command()
 @commands.has_permissions(manage_guild=True)
-async def reload(ctx):
-	"""Reloads the bot's extensions.
+async def reload(ctx, *extensions):
+	"""Reloads the provided extensions.
+
+	If none are provided, reload all loaded extensions.
 
 	This command requires the Manage Server permission.
 	"""
-	for cog_name in conf['extensions']:
-		await ctx.invoke(unload, cog_name)
-		await ctx.invoke(load, cog_name)
+	if extensions is None:
+		extensions = conf['extensions']
+
+	for cog_name in extensions:
+		try:
+			await ctx.invoke(unload, cog_name)
+			await ctx.invoke(load, cog_name)
+		except commands.ExtensionError:
+			continue
 
 	await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
