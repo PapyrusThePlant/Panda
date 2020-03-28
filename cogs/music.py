@@ -42,7 +42,7 @@ class Song(discord.PCMVolumeTransformer):
         self.requester = song_info.requester
         self.channel = song_info.channel
         self.filename = song_info.filename
-        super().__init__(discord.FFmpegPCMAudio(self.filename, before_options='-nostdin', options='-vn'), volume=volume)
+        super().__init__(discord.FFmpegPCMAudio(self.filename, options='-vn'), volume=volume)
 
 
 class SongInfo:
@@ -51,6 +51,7 @@ class SongInfo:
         'default_search': 'auto',
         'format': 'bestaudio/best',
         'ignoreerrors': True,
+        'source_address': '0.0.0.0',
         'nocheckcertificate': True,
         'restrictfilenames': True,
         'logger': logging.getLogger(__name__),
@@ -322,8 +323,7 @@ class Music(commands.Cog):
         """Plays a song or adds it to the playlist.
 
         Automatically searches with youtube_dl
-        List of supported sites :
-        https://github.com/rg3/youtube-dl/blob/1b6712ab2378b2e8eb59f372fb51193f8d3bdc97/docs/supportedsites.md
+        List of supported sites : https://ytdl-org.github.io/youtube-dl/supportedsites.html
         """
         await ctx.message.add_reaction('\N{HOURGLASS}')
 
