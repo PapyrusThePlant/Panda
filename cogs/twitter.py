@@ -157,6 +157,8 @@ class Twitter(commands.Cog):
 
     async def stream_tweets(self):
         """Twitter stream daemon."""
+        await self.bot.wait_until_ready()
+        
         async with self.twitter_client.stream.statuses.filter.post(follow=list(self.conf.follows.keys())) as stream:
             async for data in stream:
                 if peony.events.on_tweet(data):
