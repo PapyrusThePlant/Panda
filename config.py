@@ -85,9 +85,8 @@ class _ConfigEncoder(json.JSONEncoder):
                 if k[0] == '_':
                     del o.__dict__[k]
 
-            # The following is dependant on the file location
-            o.__dict__['__class__'] = f'{__name__}.{o.__class__.__qualname__}'
-            return o
+            o.__dict__['__class__'] = o.__class__.__qualname__
+            return o.__dict__
 
         # Let the base class default method raise the TypeError
         return super().default(self, o)
@@ -110,20 +109,22 @@ class _ConfigDecoder:
         if '__class__' in o:
             name = o.pop('__class__')
 
-            # Get the top level module/class in the given name
-            parts = name.split('.')
-            obj = self._globals[parts[0]]
+            # Check the general case
+            if name == ConfigElement.__qualname__:
+                return ConfigElement(**o)
 
-            # Walk the rest of the dotted path if any
-            for part in parts[1:]:
-                if inspect.ismodule(obj):
-                    obj = getattr(obj, part, None)
-                    if obj is None:
-                        raise KeyError(f'Could not find {part} in {obj.__name__}')
-                elif inspect.isclass(obj):
-                    obj = obj.__dict__[part]
-                else:
-                    raise TypeError('Expected Class or Module.')
+            # Go look for a subclass in the caller's module
+            parts = name.split('.')
+            try:
+                obj = self._globals[parts[0]]
+
+                for part in parts[1:]:
+                    if inspect.isclass(obj):
+                        obj = obj.__dict__[part]
+                    else:
+                        raise TypeError('Expected class name.')
+            except KeyError:
+                raise KeyError(f'Could not find class {name} in {self._globals["__file__"]}')
 
             return obj(**o)
 
