@@ -81,6 +81,8 @@ async def load(ctx, name):
         await ctx.send(f'Extension {name} not found.')
     else:
         conf['extensions'].append(name)
+        with open(conf_file, 'w') as fp:
+            json.dump(conf, fp)
         await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
 
@@ -97,6 +99,8 @@ async def unload(ctx, name):
         await ctx.send(f'Extension {name} not loaded.')
     else:
         conf['extensions'].remove(name)
+        with open(conf_file, 'w') as fp:
+            json.dump(conf, fp)
         await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
 
