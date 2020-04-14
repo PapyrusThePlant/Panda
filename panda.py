@@ -107,7 +107,7 @@ async def unload(ctx, name):
 @bot.command()
 @commands.has_permissions(manage_guild=True)
 async def reload(ctx, *extensions):
-    """Reloads the provided extensions.
+    """Reloads extensions.
 
     If none are provided, reload all loaded extensions.
 
@@ -118,10 +118,10 @@ async def reload(ctx, *extensions):
 
     for cog in extensions:
         try:
-            await ctx.invoke(unload, cog)
-            await ctx.invoke(load, cog)
-        except commands.ExtensionError:
-            continue
+            ctx.bot.unload_extension(f'cogs.{cog}')
+            ctx.bot.load_extension(f'cogs.{cog}')
+        except commands.ExtensionError as e:
+            await ctx.send(f'Error reloading extension {cog} : {e}')
 
     await ctx.message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
 
