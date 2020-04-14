@@ -11,14 +11,16 @@ import psutil
 # Setup logging
 rlog = logging.getLogger()
 rlog.setLevel(logging.INFO)
-handler = logging.FileHandler('logs/panda.log', encoding='utf-8')
+handler = logging.FileHandler('panda.log', encoding='utf-8')
 handler.setFormatter(logging.Formatter('{asctime}:{levelname}:{name}:{message}', style='{'))
 rlog.addHandler(handler)
 
 logging.getLogger('discord').setLevel(logging.WARNING)
 
+conf_file = 'conf/panda.json'
+
 # Get the token
-with open('conf/panda.json') as fp:
+with open(conf_file) as fp:
     conf = json.load(fp)
 
 # Complicated bot creation
