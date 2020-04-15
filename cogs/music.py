@@ -280,12 +280,12 @@ class Music(commands.Cog):
     async def cog_command_error(self, ctx, error):
         """Error handler for the cog's commands."""
         if not isinstance(error, (commands.UserInputError, commands.CheckFailure)):
-            raise error
+            return
 
         try:
             await ctx.send(error)
         except discord.Forbidden:
-            pass # /shrug
+            pass  # /shrug
 
     @commands.command()
     async def status(self, ctx):
