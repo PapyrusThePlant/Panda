@@ -44,6 +44,12 @@ class Song(discord.PCMVolumeTransformer):
         self.filename = song_info.filename
         super().__init__(discord.FFmpegPCMAudio(self.filename, options='-vn'), volume=volume)
 
+    def __str__(self):
+        title = f"**{self.info['title']}**"
+        creator = f"**{self.info.get('creator') or self.info['uploader']}**"
+        duration = f" (duration: {duration_to_str(self.info['duration'])})" if 'duration' in self.info else ''
+        return f'{title} from {creator}{duration}'
+
 
 class SongInfo:
     """Represents a Song's info."""
@@ -153,12 +159,6 @@ class SongInfo:
         """Helper function to wait until the song file has been downloaded."""
         await self.downloaded.wait()
 
-    def __str__(self):
-        title = f"**{self.info['title']}**"
-        creator = f"**{self.info.get('creator') or self.info['uploader']}**"
-        duration = f" (duration: {duration_to_str(self.info['duration'])})" if 'duration' in self.info else ''
-        return f'{title} from {creator}{duration}'
-
 
 class Playlist(asyncio.Queue):
     """Represents a playlist."""
@@ -252,7 +252,7 @@ class GuildMusicState:
             await next_song_info.wait_until_downloaded()
             source = Song(next_song_info, self.player_volume)
             self.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next_song(next_song_info, e), self.loop).result())
-            await next_song_info.channel.send(f'Now playing {next_song_info}')
+            await next_song_info.channel.send(f'Now playing {source}.')
 
 
 class Music(commands.Cog):
@@ -292,7 +292,7 @@ class Music(commands.Cog):
         """Displays the currently played song."""
         if ctx.music_state.is_playing():
             song = ctx.music_state.current_song
-            await ctx.send(f'Playing {song}. Volume at {song.volume * 100}% in {ctx.voice_client.channel.mention}')
+            await ctx.send(f'Now playing {song}.\nVolume at {song.volume * 100}% in {ctx.voice_client.channel.mention}')
         else:
             await ctx.send('Not playing.')
 
